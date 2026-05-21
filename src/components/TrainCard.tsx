@@ -1,4 +1,5 @@
 import type { Train } from '../data/trains';
+import { Link } from 'react-router-dom'; // Додали імпорт
 
 interface TrainCardProps {
   train: Train;
@@ -12,7 +13,7 @@ export default function TrainCard({ train }: TrainCardProps) {
         <span className="text-sm font-medium text-gray-500">{train.departureDate}</span>
       </div>
       
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6"> {/* Додали mb-6 */}
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-800">{train.departureTime}</p>
           <p className="text-sm text-gray-500">{train.departureCity}</p>
@@ -28,6 +29,16 @@ export default function TrainCard({ train }: TrainCardProps) {
         <div className="text-center">
           <p className="text-sm text-gray-500 mt-8">{train.arrivalCity}</p>
         </div>
+      </div>
+
+      {/* НОВА КНОПКА ДЛЯ ПЕРЕХОДУ НА БРОНЮВАННЯ */}
+      <div className="flex justify-end pt-2">
+        <Link 
+          to={`/booking/${train.id}`}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        >
+          Вибрати місця
+        </Link>
       </div>
     </div>
   );
