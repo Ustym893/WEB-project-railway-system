@@ -3,33 +3,52 @@ import { useParams, Link } from 'react-router-dom';
 import { trainsData } from '../data/trains';
 import WagonSelector from '../components/WagonSelector';
 import SeatMap from '../components/SeatMap';
+import BookingForm, { type UserData } from '../components/BookingForm'; // ДОДАНО ІМПОРТ
 
 export default function Booking() {
   const { trainId } = useParams<{ trainId: string }>();
   const train = trainsData.find(t => t.id === trainId);
 
-  // Стан для обраного вагона та місць 
   const [selectedWagon, setSelectedWagon] = useState<number>(1);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
+  const [isSuccess, setIsSuccess] = useState(false); // Стан для повідомлення про успіх
 
-  // Тестові дані
   const wagonsList = [1, 2, 3, 4, 5];
-  // Імітуємо, що деякі місця вже заброньовані іншими людьми
   const mockBookedSeats = selectedWagon === 1 ? [2, 5, 12, 13] : [1, 2, 3, 35, 36];
 
-  // Логіка вибору/скасування місця
   const handleToggleSeat = (seatId: number) => {
+    // Якщо бронювання вже успішне, забороняємо клікати
+    if (isSuccess) return; 
+    
     setSelectedSeats((prev) =>
       prev.includes(seatId)
-        ? prev.filter((id) => id !== seatId) // Якщо вже обрано - видаляємо
-        : [...prev, seatId] // Якщо не обрано - додаємо
+        ? prev.filter((id) => id !== seatId)
+        : [...prev, seatId]
     );
   };
 
-  // Коли змінюємо вагон, очищаємо обрані місця
   const handleWagonChange = (wagonId: number) => {
     setSelectedWagon(wagonId);
     setSelectedSeats([]);
+    setIsSuccess(false); // Скидаємо повідомлення про успіх при зміні вагона
+  };
+
+  // ФУНКЦІЯ ОБРОБКИ БРОНЮВАННЯ [cite: 149]
+  const handleBookingSubmit = (userData: UserData) => {
+    const bookingDetails = {
+      trainId: train?.id,
+      trainNumber: train?.trainNumber,
+      wagon: selectedWagon,
+      seats: selectedSeats,
+      user: userData,
+      date: new Date().toISOString()
+    };
+
+    // Зберігаємо в LocalStorage 
+    const existingBookings = JSON.parse(localStorage.getItem('railway_bookings') || '[]');
+    localStorage.setItem('railway_bookings', JSON.stringify([...existingBookings, bookingDetails]));
+
+    setIsSuccess(true); // Показуємо успішне повідомлення 
   };
 
   if (!train) {
@@ -56,7 +75,6 @@ export default function Booking() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Ліва колонка: Вагони та Місця */}
         <div className="lg:col-span-2">
           <WagonSelector 
             wagons={wagonsList} 
@@ -64,13 +82,13 @@ export default function Booking() {
             onSelect={handleWagonChange} 
           />
           <SeatMap 
-            bookedSeats={mockBookedSeats}
-            selectedSeats={selectedSeats}
+            bookedSeats={isSuccess ? [...mockBookedSeats, ...selectedSeats] : mockBookedSeats}
+            selectedSeats={isSuccess ? [] : selectedSeats}
             onToggleSeat={handleToggleSeat}
           />
         </div>
 
-        {/* Права колонка: Форма та Підсумок (це ми зробимо в наступному кроці) */}
+        {/* Права колонка з Формою */}
         <div>
           <div className="bg-gray-800 rounded-xl shadow-md p-6 text-white sticky top-4">
             <h3 className="text-xl font-bold mb-4 border-b border-gray-600 pb-4">Ваше замовлення</h3>
@@ -87,10 +105,21 @@ export default function Booking() {
               </p>
             </div>
             
-            {/* Тимчасова заглушка для форми */}
-            <div className="mt-8 pt-4 border-t border-gray-600 text-sm text-gray-400 text-center">
-              Форма вводу даних буде додана на наступному етапі
-            </div>
+            {/* Показуємо або повідомлення про успіх, або форму */}
+            {isSuccess ? (
+              <div className="mt-6 bg-green-500/20 border border-green-500 text-green-300 p-4 rounded-xl text-center">
+                <h4 className="font-bold text-lg mb-1">Квитки заброньовано!</h4>
+                <p className="text-sm">Дані успішно збережено в системі.</p>
+                <button 
+                  onClick={() => { setSelectedSeats([]); setIsSuccess(false); }}
+                  className="mt-4 text-sm text-white underline hover:text-green-200"
+                >
+                  Забронювати ще
+                </button>
+              </div>
+            ) : (
+              <BookingForm selectedSeats={selectedSeats} onSubmit={handleBookingSubmit} />
+            )}
           </div>
         </div>
       </div>
